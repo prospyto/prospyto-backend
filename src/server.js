@@ -5,6 +5,7 @@ import "dotenv/config";
 import inquiriesRouter from "./routes/inquiries.js";
 import projectsRouter from "./routes/projects.js";
 import trackRouter from "./routes/track.js";
+import reviewsRouter from "./routes/reviews.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -24,6 +25,9 @@ app.use("/api/projects", projectsRouter);
 
 // Lecture publique via tracking_link (dashboard client, sans auth)
 app.use("/api/track", trackRouter);
+
+// Avis publiés, pour la page de vente
+app.use("/api/reviews", reviewsRouter);
 
 app.listen(PORT, () => {
   console.log(`Prospyto backend running on port ${PORT}`);
