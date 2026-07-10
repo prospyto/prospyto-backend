@@ -2,6 +2,7 @@ import { Router } from "express";
 import { pool } from "../db/pool.js";
 import { generateTrackingLink } from "../utils/generateTrackingLink.js";
 import { requireAuth } from "../middleware/auth.js";
+import { sendEmail, inquiryConfirmationEmail, newInquiryAdminEmail, projectCreatedEmail } from "../utils/email.js";
 
 const router = Router();
 
@@ -30,6 +31,17 @@ router.post("/", async (req, res) => {
     );
 
     await client.query("COMMIT");
+
+    // Best-effort : un échec d'email ne doit jamais faire échouer la requête.
+    // On ne bloque pas la réponse dessus (pas de await sur la promesse globale).
+    if (process.env.ADMIN_EMAIL) {
+      sendEmail({ to: email, ...inquiryConfirmationEmail({ clientName: name, projectType: project_type }) });
+      sendEmail({
+        to: process.env.ADMIN_EMAIL,
+        ...newInquiryAdminEmail({ clientName: name, clientEmail: email, clientPhone: phone, projectType: project_type, description }),
+      });
+    }
+
     res.status(201).json({ inquiry_id: inquiryResult.rows[0].id, client_id: clientId });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -65,11 +77,16 @@ router.post("/:id/convert", requireAuth, async (req, res) => {
   const { title, description } = req.body;
 
   try {
-    const inquiryResult = await pool.query(`SELECT client_id FROM inquiries WHERE id = $1`, [id]);
+    const inquiryResult = await pool.query(
+      `SELECT i.client_id, c.name AS client_name, c.email AS client_email
+       FROM inquiries i JOIN clients c ON c.id = i.client_id
+       WHERE i.id = $1`,
+      [id]
+    );
     if (inquiryResult.rows.length === 0) {
       return res.status(404).json({ error: "Demande introuvable" });
     }
-    const { client_id } = inquiryResult.rows[0];
+    const { client_id, client_name, client_email } = inquiryResult.rows[0];
     const trackingLink = generateTrackingLink();
 
     const projectResult = await pool.query(
@@ -77,6 +94,11 @@ router.post("/:id/convert", requireAuth, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING id, tracking_link`,
       [client_id, id, title, description, trackingLink]
     );
+
+    sendEmail({
+      to: client_email,
+      ...projectCreatedEmail({ clientName: client_name, projectTitle: title, trackingLink }),
+    });
 
     res.status(201).json(projectResult.rows[0]);
   } catch (err) {
