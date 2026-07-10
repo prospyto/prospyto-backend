@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 
+import adminRouter from "./routes/admin.js";
 import inquiriesRouter from "./routes/inquiries.js";
 import projectsRouter from "./routes/projects.js";
 import trackRouter from "./routes/track.js";
@@ -16,6 +17,9 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
+// Login admin -> renvoie un JWT (route publique, JAMAIS derrière requireAuth)
+app.use("/api/admin", adminRouter);
 
 // Formulaire client -> crée une inquiry
 app.use("/api/inquiries", inquiriesRouter);

@@ -1,8 +1,12 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
 import { buildWhatsAppLink, buildProgressMessage, buildFinalMessage } from "../utils/whatsapp.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
+
+// Toutes les routes de ce fichier sont réservées à l'admin.
+router.use(requireAuth);
 
 // GET /api/projects - liste tous les projets (admin)
 router.get("/", async (req, res) => {

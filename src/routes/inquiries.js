@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
 import { generateTrackingLink } from "../utils/generateTrackingLink.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.post("/", async (req, res) => {
 });
 
 // GET /api/inquiries - liste des demandes en attente (admin)
-router.get("/", async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT i.id, i.project_type, i.description, i.budget, i.timeline, i.created_at,
@@ -58,8 +59,8 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /api/inquiries/:id/convert - transforme une inquiry en projet (génère le lien unique)
-router.post("/:id/convert", async (req, res) => {
+// POST /api/inquiries/:id/convert - transforme une inquiry en projet (génère le lien unique) (admin)
+router.post("/:id/convert", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { title, description } = req.body;
 
