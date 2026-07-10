@@ -7,6 +7,10 @@ import inquiriesRouter from "./routes/inquiries.js";
 import projectsRouter from "./routes/projects.js";
 import trackRouter from "./routes/track.js";
 import reviewsRouter from "./routes/reviews.js";
+import blogRouter from "./routes/blog.js";
+import blogAdminRouter from "./routes/blogAdmin.js";
+import analyticsRouter from "./routes/analytics.js";
+import analyticsAdminRouter from "./routes/analyticsAdmin.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -32,6 +36,14 @@ app.use("/api/track", trackRouter);
 
 // Avis publiés, pour la page de vente
 app.use("/api/reviews", reviewsRouter);
+
+// Blog : lecture publique, gestion CMS réservée à l'admin
+app.use("/api/blog", blogRouter);
+app.use("/api/admin/blog", blogAdminRouter);
+
+// Analytics : tracking public, dashboard agrégé réservé à l'admin
+app.use("/api/analytics", analyticsRouter);
+app.use("/api/admin/analytics", analyticsAdminRouter);
 
 app.listen(PORT, () => {
   console.log(`Prospyto backend running on port ${PORT}`);

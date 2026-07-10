@@ -138,10 +138,65 @@ router.post("/:id/notify", async (req, res) => {
   }
 });
 
-// POST /api/projects/:id/notes - note interne (jamais envoyée au client)
+// GET /api/projects/:id/notes - liste des notes internes (jamais exposées au client)
+router.get("/:id/notes", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT id, content, created_at FROM project_notes
+       WHERE project_id = $1 ORDER BY created_at DESC`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la récupération des notes" });
+  }
+});
+
+// POST /api/projects/:id/notes - ajouter une note interne
 router.post("/:id/notes", async (req, res) => {
-  // Placeholder simple : à brancher sur une table `project_notes` si besoin de plus qu'une note.
-  res.status(501).json({ error: "À implémenter : table project_notes" });
+  const { id } = req.params;
+  const { content } = req.body;
+
+  if (!content || !content.trim()) {
+    return res.status(400).json({ error: "Le contenu de la note est requis" });
+  }
+
+  try {
+    const projectCheck = await pool.query(`SELECT id FROM projects WHERE id = $1`, [id]);
+    if (projectCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Projet introuvable" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO project_notes (project_id, content) VALUES ($1, $2)
+       RETURNING id, content, created_at`,
+      [id, content.trim()]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de l'ajout de la note" });
+  }
+});
+
+// DELETE /api/projects/:id/notes/:noteId - supprimer une note interne
+router.delete("/:id/notes/:noteId", async (req, res) => {
+  const { id, noteId } = req.params;
+  try {
+    const result = await pool.query(
+      `DELETE FROM project_notes WHERE id = $1 AND project_id = $2 RETURNING id`,
+      [noteId, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Note introuvable" });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la suppression de la note" });
+  }
 });
 
 export default router;

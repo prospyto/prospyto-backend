@@ -51,6 +51,13 @@ CREATE TABLE reviews (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE project_notes (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE blog_posts (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
@@ -72,3 +79,4 @@ CREATE TABLE page_events (
 CREATE INDEX idx_projects_tracking_link ON projects(tracking_link);
 CREATE INDEX idx_projects_client_id ON projects(client_id);
 CREATE INDEX idx_notifications_project_id ON notifications(project_id);
+CREATE INDEX idx_project_notes_project_id ON project_notes(project_id);

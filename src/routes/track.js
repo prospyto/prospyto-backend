@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
+import { buildWhatsAppLink } from "../utils/whatsapp.js";
 
 const router = Router();
 
@@ -22,7 +23,20 @@ router.get("/:link", async (req, res) => {
       return res.status(404).json({ error: "Projet introuvable" });
     }
 
-    res.json(result.rows[0]);
+    const p = result.rows[0];
+
+    // Noms de champs alignés sur ce que consomme le frontend (app/track/[link]/page.tsx).
+    res.json({
+      title: p.title,
+      description: p.description,
+      completion_percent: p.completion_percent,
+      status: p.status,
+      start_date: p.start_date,
+      end_date_estimated: p.estimated_end_date,
+      end_date_actual: p.actual_end_date,
+      whatsapp_link: buildWhatsAppLink(p.client_phone),
+      can_review: p.status === "complete",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur lors de la récupération du projet" });
