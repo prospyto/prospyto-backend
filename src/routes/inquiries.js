@@ -74,11 +74,15 @@ router.get("/", requireAuth, async (req, res) => {
 // POST /api/inquiries/:id/convert - transforme une inquiry en projet (génère le lien unique) (admin)
 router.post("/:id/convert", requireAuth, async (req, res) => {
   const { id } = req.params;
-  const { title, description } = req.body;
+  const { title, description, start_date, estimated_end_date } = req.body;
+
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: "Le titre du projet est requis" });
+  }
 
   try {
     const inquiryResult = await pool.query(
-      `SELECT i.client_id, c.name AS client_name, c.email AS client_email
+      `SELECT i.client_id, i.description AS inquiry_description, c.name AS client_name, c.email AS client_email
        FROM inquiries i JOIN clients c ON c.id = i.client_id
        WHERE i.id = $1`,
       [id]
@@ -86,13 +90,14 @@ router.post("/:id/convert", requireAuth, async (req, res) => {
     if (inquiryResult.rows.length === 0) {
       return res.status(404).json({ error: "Demande introuvable" });
     }
-    const { client_id, client_name, client_email } = inquiryResult.rows[0];
+    const { client_id, inquiry_description, client_name, client_email } = inquiryResult.rows[0];
     const trackingLink = generateTrackingLink();
+    const finalDescription = description && description.trim() ? description.trim() : inquiry_description;
 
     const projectResult = await pool.query(
-      `INSERT INTO projects (client_id, inquiry_id, title, description, tracking_link)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, tracking_link`,
-      [client_id, id, title, description, trackingLink]
+      `INSERT INTO projects (client_id, inquiry_id, title, description, tracking_link, start_date, estimated_end_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, tracking_link`,
+      [client_id, id, title.trim(), finalDescription, trackingLink, start_date || null, estimated_end_date || null]
     );
 
     sendEmail({
