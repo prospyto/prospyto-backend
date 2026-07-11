@@ -20,20 +20,11 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({ error: "Configuration admin manquante" });
   }
 
-  // DIAGNOSTIC TEMPORAIRE (à retirer une fois le login qui fonctionne) :
-  // logs uniquement, jamais renvoyés au client.
-  console.log("[login-debug] email reçu:", JSON.stringify(email), "longueur:", email.length);
-  console.log("[login-debug] ADMIN_EMAIL configuré:", JSON.stringify(adminEmail), "longueur:", adminEmail.length);
-  console.log("[login-debug] emails identiques ?", email === adminEmail);
-  console.log("[login-debug] password reçu, longueur:", password.length);
-  console.log("[login-debug] hash configuré, longueur:", adminPasswordHash.length, "commence par:", adminPasswordHash.slice(0, 7));
-
   if (email !== adminEmail) {
     return res.status(401).json({ error: "Identifiants invalides" });
   }
 
   const match = await bcrypt.compare(password, adminPasswordHash);
-  console.log("[login-debug] bcrypt.compare résultat:", match);
   if (!match) {
     return res.status(401).json({ error: "Identifiants invalides" });
   }
