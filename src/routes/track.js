@@ -10,7 +10,7 @@ router.get("/:link", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT p.title, p.description, p.completion_percent, p.status,
+      `SELECT p.id, p.title, p.description, p.completion_percent, p.status,
               p.start_date, p.estimated_end_date, p.actual_end_date,
               c.name AS client_name, c.phone AS client_phone
        FROM projects p
@@ -24,6 +24,12 @@ router.get("/:link", async (req, res) => {
     }
 
     const p = result.rows[0];
+
+    // Best-effort : on ne bloque jamais la réponse au client là-dessus, et
+    // un échec ne doit jamais faire échouer la requête (pas de await).
+    pool
+      .query(`INSERT INTO page_events (event_type, project_id) VALUES ('track_view', $1)`, [p.id])
+      .catch((err) => console.error("Erreur log visite track:", err));
 
     // Noms de champs alignés sur ce que consomme le frontend (app/track/[link]/page.tsx).
     res.json({

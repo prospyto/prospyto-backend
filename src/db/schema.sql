@@ -73,6 +73,7 @@ CREATE TABLE page_events (
   event_type TEXT NOT NULL,
   section TEXT,
   source TEXT,
+  project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -80,3 +81,4 @@ CREATE INDEX idx_projects_tracking_link ON projects(tracking_link);
 CREATE INDEX idx_projects_client_id ON projects(client_id);
 CREATE INDEX idx_notifications_project_id ON notifications(project_id);
 CREATE INDEX idx_project_notes_project_id ON project_notes(project_id);
+CREATE INDEX idx_page_events_project_id ON page_events(project_id);

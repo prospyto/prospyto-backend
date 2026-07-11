@@ -68,4 +68,27 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/admin/analytics/visits?limit=20 - qui a consulté son dashboard /track, et quand
+router.get("/visits", async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+
+  try {
+    const result = await pool.query(
+      `SELECT pe.id, pe.created_at, p.id AS project_id, p.title AS project_title,
+              c.name AS client_name
+       FROM page_events pe
+       JOIN projects p ON p.id = pe.project_id
+       JOIN clients c ON c.id = p.client_id
+       WHERE pe.event_type = 'track_view'
+       ORDER BY pe.created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la récupération des visites" });
+  }
+});
+
 export default router;
