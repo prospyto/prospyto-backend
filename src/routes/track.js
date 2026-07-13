@@ -27,9 +27,13 @@ router.get("/:link", async (req, res) => {
 
     // Best-effort : on ne bloque jamais la réponse au client là-dessus, et
     // un échec ne doit jamais faire échouer la requête (pas de await).
-    pool
-      .query(`INSERT INTO page_events (event_type, project_id) VALUES ('track_view', $1)`, [p.id])
-      .catch((err) => console.error("Erreur log visite track:", err));
+    // ?silent=1 = rafraîchissement automatique en arrière-plan (polling), pas
+    // une vraie visite : on ne veut pas gonfler artificiellement les stats.
+    if (req.query.silent !== "1") {
+      pool
+        .query(`INSERT INTO page_events (event_type, project_id) VALUES ('track_view', $1)`, [p.id])
+        .catch((err) => console.error("Erreur log visite track:", err));
+    }
 
     // Noms de champs alignés sur ce que consomme le frontend (app/track/[link]/page.tsx).
     res.json({
