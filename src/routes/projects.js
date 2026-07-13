@@ -51,6 +51,52 @@ router.patch("/:id/progress", async (req, res) => {
   }
 });
 
+// PATCH /api/projects/:id/dates - modifier date de début / fin estimée (cahier des charges V2 section 5.1)
+router.patch("/:id/dates", async (req, res) => {
+  const { id } = req.params;
+  const { start_date, estimated_end_date } = req.body;
+
+  if (start_date === undefined && estimated_end_date === undefined) {
+    return res.status(400).json({ error: "Aucune date à mettre à jour" });
+  }
+
+  const isValidDate = (d) => d === undefined || d === null || (typeof d === "string" && !isNaN(Date.parse(d)));
+  if (!isValidDate(start_date) || !isValidDate(estimated_end_date)) {
+    return res.status(400).json({ error: "Format de date invalide" });
+  }
+
+  const fields = ["updated_at = now()"];
+  const values = [];
+  let paramIndex = 1;
+
+  if (start_date !== undefined) {
+    fields.push(`start_date = $${paramIndex}`);
+    values.push(start_date);
+    paramIndex++;
+  }
+  if (estimated_end_date !== undefined) {
+    fields.push(`estimated_end_date = $${paramIndex}`);
+    values.push(estimated_end_date);
+    paramIndex++;
+  }
+  values.push(id);
+
+  try {
+    const result = await pool.query(
+      `UPDATE projects SET ${fields.join(", ")} WHERE id = $${paramIndex}
+       RETURNING id, start_date, estimated_end_date`,
+      values
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Projet introuvable" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la mise à jour des dates" });
+  }
+});
+
 // PATCH /api/projects/:id/status - changer discussion / en_cours / complete
 router.patch("/:id/status", async (req, res) => {
   const { id } = req.params;
